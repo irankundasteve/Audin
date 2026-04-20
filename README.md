@@ -1,11 +1,31 @@
-<div align="center">
+# Auden: Pro Voice Recorder
 
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+A high-fidelity voice recording application with hardware-inspired design and on-device AI processing.
 
-  <h1>Built with AI Studio</h2>
+## Features
+- **Professional DSP Engine**: Real-time limiting, EQ, and compression.
+- **On-Device AI**: Noise reduction and voice enhancement without using a server.
+- **Smart Storage**: Built-in management for large audio libraries.
+- **Privacy First**: Fully operational offline with secure local processing.
 
-  <p>The fastest path from prompt to production with Gemini.</p>
+## Development
+```bash
+npm install
+npm run dev
+```
 
-  <a href="https://aistudio.google.com/apps">Start building</a>
+## CI/CD
+This project uses GitHub Actions to automatically:
+1. Verify code quality (Linting)
+2. Build the production web distribution
+3. Prepare artifacts for deployment
 
-</div>
+The workflow is located in `.github/workflows/main.yml`.
+
+## APK / Mobile
+To turn this into an APK, recommend using [Capacitor](https://capacitorjs.com/):
+1. `npm install @capacitor/core @capacitor/cli`
+2. `npx cap init`
+3. `npx cap add android`
+4. `npx cap sync`
+5. `./gradlew assembleDebug` (in the android folder)
