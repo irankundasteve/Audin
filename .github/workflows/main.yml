@@ -37,19 +37,45 @@ jobs:
           name: web-dist
           path: dist/
 
-  # Placeholder for Android APK build (requires Capacitor setup)
-  # android-build:
-  #   needs: build-and-test
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - name: Setup Java
-  #       uses: actions/setup-java@v4
-  #       with:
-  #         java-version: '17'
-  #         distribution: 'zulu'
-  #     - name: Build Android APK
-  #       run: |
-  #         echo "Add Capacitor/Cordova build commands here"
-  #         # npx cap sync
-  #         # cd android && ./gradlew assembleDebug
+  android-build:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            npm install
+          fi
+
+      - name: Build Web Application
+        run: npm run build
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'zulu'
+
+      - name: Capacitor Sync
+        run: npx cap sync
+
+      - name: Build Android APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: audin-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
