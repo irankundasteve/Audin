@@ -68,6 +68,9 @@ jobs:
       - name: Capacitor Sync
         run: npx cap sync
 
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
       - name: Build Android APK
         run: |
           cd android
