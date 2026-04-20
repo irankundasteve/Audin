@@ -71,7 +71,7 @@ export default function App() {
       setShowSplash(false);
       
       // Attempt load from meta
-      const saved = localStorage.getItem('auden_recordings_meta');
+      const saved = localStorage.getItem('audin_recordings_meta');
       if (saved) {
         try {
           setRecordings(JSON.parse(saved));
@@ -94,7 +94,7 @@ export default function App() {
   // Sync recordings to local meta
   useEffect(() => {
     if (!isLoading) {
-      localStorage.setItem('auden_recordings_meta', JSON.stringify(recordings));
+      localStorage.setItem('audin_recordings_meta', JSON.stringify(recordings));
     }
   }, [recordings, isLoading]);
 

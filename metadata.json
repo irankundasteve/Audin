@@ -1,5 +1,5 @@
 {
-  "name": "Auden: Pro Voice Recorder",
+  "name": "Audin: Pro Voice Recorder",
   "description": "High-fidelity voice recording suite featuring AI-powered noise reduction, professional DSP effects, and intelligent storage management.",
   "requestFramePermissions": [
     "microphone"

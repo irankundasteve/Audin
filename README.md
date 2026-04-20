@@ -1,4 +1,4 @@
-# Auden: Pro Voice Recorder
+# Audin: Pro Voice Recorder
 
 A high-fidelity voice recording application with hardware-inspired design and on-device AI processing.
 
