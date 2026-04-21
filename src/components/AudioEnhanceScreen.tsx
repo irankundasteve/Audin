@@ -1,10 +1,11 @@
 
-import { ChevronLeft, Wand2, Play, Pause, RotateCcw, Save, Trash2, Sliders, Zap, Mic2, Music2, Wind, Sparkles, Check, Activity, Loader2 } from "lucide-react";
+import { ChevronLeft, Wand2, Play, Pause, RotateCcw, Save, Trash2, Sliders, Zap, Mic2, Music2, Wind, Sparkles, Check, Activity, Loader2, FileText, List } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import React, { useState, useEffect, useRef } from "react";
 import { Recording } from "../App";
 import { EffectConfig, EffectType, NoiseReductionConfig, VoiceEnhanceConfig, CompressorConfig } from "../types/effects";
 import SpectrumAnalyzer from "./SpectrumAnalyzer";
+import { transcribeAudio, getAudioSummary } from "../services/aiService";
 
 interface AudioEnhanceScreenProps {
   recording: Recording;
@@ -16,10 +17,12 @@ interface AudioEnhanceScreenProps {
 export default function AudioEnhanceScreen({ recording, onBack, onSave }: AudioEnhanceScreenProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isEnhanced, setIsEnhanced] = useState(true);
-  const [activeTab, setActiveTab] = useState<'presets' | 'custom'>('presets');
+  const [activeTab, setActiveTab] = useState<'presets' | 'custom' | 'ai-insights'>('presets');
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [saveProgress, setSaveProgress] = useState<number | null>(null);
+  const [transcript, setTranscript] = useState<string | null>(null);
+  const [summary, setSummary] = useState<{ summary: string; keywords: string[] } | null>(null);
   
   const [effects, setEffects] = useState<EffectConfig[]>([
     { id: '1', type: 'noise-reduction', enabled: true, name: 'AI Noise Removal', mode: 'advanced', strength: 25 },
@@ -42,6 +45,34 @@ export default function AudioEnhanceScreen({ recording, onBack, onSave }: AudioE
     }
     return () => clearInterval(interval);
   }, [isPlaying]);
+
+  const fetchAIInsights = async () => {
+    if (!recording.audioUrl || (transcript && summary)) return;
+    
+    setIsProcessing(true);
+    try {
+      const response = await fetch(recording.audioUrl);
+      const audioBlob = await response.blob();
+      
+      const [newTranscript, newSummary] = await Promise.all([
+        transcribeAudio(audioBlob),
+        getAudioSummary(audioBlob)
+      ]);
+      
+      setTranscript(newTranscript);
+      setSummary(newSummary);
+    } catch (error) {
+      console.error("AI Insights fetch failed:", error);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'ai-insights') {
+      fetchAIInsights();
+    }
+  }, [activeTab]);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -290,6 +321,13 @@ export default function AudioEnhanceScreen({ recording, onBack, onSave }: AudioE
               Custom Chain
               {activeTab === 'custom' && <motion.div layoutId="tab" className="absolute bottom-0 inset-x-0 h-0.5 bg-[#2196F3]" />}
            </button>
+           <button 
+             onClick={() => setActiveTab('ai-insights')}
+             className={`pb-4 text-[13px] font-bold uppercase tracking-widest transition-all relative ${activeTab === 'ai-insights' ? 'text-[#2196F3]' : 'text-[#777777]'}`}
+           >
+              AI Insights
+              {activeTab === 'ai-insights' && <motion.div layoutId="tab" className="absolute bottom-0 inset-x-0 h-0.5 bg-[#2196F3]" />}
+           </button>
         </div>
 
         {/* Tab Content */}
@@ -312,7 +350,7 @@ export default function AudioEnhanceScreen({ recording, onBack, onSave }: AudioE
                   </button>
                 ))}
              </div>
-           ) : (
+           ) : activeTab === 'custom' ? (
              <div className="space-y-4">
                 {effects.map(effect => (
                   <div key={effect.id} className="p-6 bg-[#1A1A1A] rounded-[28px] border border-white/5 space-y-6 transition-all">
@@ -373,6 +411,53 @@ export default function AudioEnhanceScreen({ recording, onBack, onSave }: AudioE
                    <span className="text-[12px] font-bold uppercase tracking-widest">Add Custom Module</span>
                 </button>
              </div>
+           ) : (
+             <div className="space-y-6 animate-in fade-in duration-500">
+                {summary && (
+                  <div className="p-6 bg-[#1A1A1A] rounded-[32px] border border-white/5 space-y-4">
+                    <div className="flex items-center space-x-2 text-[#2196F3]">
+                       <List className="w-5 h-5" />
+                       <span className="text-[12px] font-bold uppercase tracking-widest">AI Summary</span>
+                    </div>
+                    <p className="text-[15px] leading-relaxed text-white/80">{summary.summary}</p>
+                    <div className="flex flex-wrap gap-2 pt-2">
+                       {summary.keywords.map((kw, i) => (
+                         <span key={i} className="px-3 py-1 bg-[#2196F3]/10 border border-[#2196F3]/20 rounded-full text-[10px] font-bold text-[#2196F3] uppercase">{kw}</span>
+                       ))}
+                    </div>
+                  </div>
+                )}
+
+                {transcript && (
+                  <div className="p-6 bg-[#1A1A1A] rounded-[32px] border border-white/5 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2 text-emerald-400">
+                         <FileText className="w-5 h-5" />
+                         <span className="text-[12px] font-bold uppercase tracking-widest">Full Transcript</span>
+                      </div>
+                      <button 
+                        onClick={() => navigator.clipboard.writeText(transcript)}
+                        className="text-[10px] text-[#777777] font-bold uppercase hover:text-white transition-colors"
+                      >
+                        Copy Text
+                      </button>
+                    </div>
+                    <div className="max-h-[300px] overflow-y-auto no-scrollbar pr-2">
+                       <p className="text-[14px] leading-relaxed text-white/60 whitespace-pre-wrap">{transcript}</p>
+                    </div>
+                  </div>
+                )}
+
+                {!transcript && !isProcessing && (
+                  <div className="py-12 flex flex-col items-center justify-center text-center space-y-4">
+                    <Sparkles className="w-12 h-12 text-[#2196F3] opacity-20" />
+                    <div>
+                      <h3 className="text-[16px] font-bold">Ready to analyze</h3>
+                      <p className="text-[13px] text-[#777777] mt-1">Tap AI Insights to begin transcription</p>
+                    </div>
+                  </div>
+                )}
+             </div>
            )}
         </div>
       </div>
@@ -380,8 +465,10 @@ export default function AudioEnhanceScreen({ recording, onBack, onSave }: AudioE
       {/* Logic/AI Status Footer */}
       <div className="p-6 bg-[#09090b] border-t border-white/5 flex items-center justify-between">
          <div className="flex items-center space-x-2">
-            <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-[10px] text-[#777777] font-bold uppercase tracking-widest">On-Device AI Optimized</span>
+            <div className={`w-2 h-2 rounded-full animate-pulse ${isProcessing ? 'bg-orange-400' : 'bg-emerald-400'}`} />
+            <span className="text-[10px] text-[#777777] font-bold uppercase tracking-widest">
+              {isProcessing ? 'Cloud AI Processing...' : 'On-Device AI Optimized'}
+            </span>
           </div>
           <p className="text-[10px] text-[#555555] font-bold uppercase tracking-widest">Secure Local Engine</p>
       </div>
