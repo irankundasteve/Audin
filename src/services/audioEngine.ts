@@ -11,7 +11,9 @@ export class AudioEngine {
   private limiter: DynamicsCompressorNode;
 
   constructor() {
-    this.context = new (window.AudioContext || (window as any).webkitAudioContext)();
+    this.context = new (window.AudioContext || (window as any).webkitAudioContext)({
+      sampleRate: 48000
+    });
     this.analyzer = this.context.createAnalyser();
     this.analyzer.fftSize = 256;
     

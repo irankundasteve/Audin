@@ -79,8 +79,16 @@ export default function HomeScreen({ recordings, isLoading, onStop, onSelect, on
     }
 
     try {
-      // 3. PERMISSION CHECK
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // 3. PERMISSION CHECK with High Fidelity constraints
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: false, // We'll handle this in our AI/DSP engine
+          autoGainControl: true,
+          channelCount: 1,
+          sampleRate: 48000
+        } 
+      });
       streamRef.current = stream;
       setPermissionStatus('granted');
 
@@ -90,28 +98,32 @@ export default function HomeScreen({ recordings, isLoading, onStop, onSelect, on
       }
       const processedStream = await audioEngineRef.current.setupRecording(stream);
 
-      // Apply some default "Voice Enhance" and "Compressor" settings for recording
+      // Apply better default "Pro" settings
       audioEngineRef.current.applyEffectChain([
         { 
-          id: 'comp', type: 'compressor', enabled: true, name: 'Auto Leveler',
-          threshold: -18, ratio: 2.5, attack: 0.003, release: 0.25, knee: 40 
+          id: 'comp', type: 'compressor', enabled: true, name: 'Pro Leveler',
+          threshold: -20, ratio: 2.0, attack: 0.005, release: 0.2, knee: 30 
         } as CompressorConfig,
         {
-          id: 'eq', type: 'eq', enabled: true, name: 'Vocal Clarity',
+          id: 'eq', type: 'eq', enabled: true, name: 'Voice Clarity',
           bands: [
-            { type: 'highpass', frequency: 80, gain: 0, q: 0.7 },
-            { type: 'peaking', frequency: 2800, gain: 2, q: 1.0 }
+            { type: 'highpass', frequency: 100, gain: 0, q: 0.7 },
+            { type: 'peaking', frequency: 3200, gain: 3.5, q: 1.2 },
+            { type: 'highshelf', frequency: 8000, gain: 2, q: 0.7 }
           ]
         } as EQConfig
       ]);
       
-      // 5. INITIALIZE RECORDER WITH PROCESSED STREAM
-      // Use webm/opus as it's the most reliable for MediaRecorder in browsers
+      // 5. INITIALIZE RECORDER WITH HIGH BITRATE
       const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') 
         ? 'audio/webm;codecs=opus' 
         : 'audio/webm';
 
-      const mediaRecorder = new MediaRecorder(processedStream, { mimeType });
+      // Increase bitrate to 256kbps for studio quality
+      const mediaRecorder = new MediaRecorder(processedStream, { 
+        mimeType,
+        audioBitsPerSecond: 256000 
+      });
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
 
