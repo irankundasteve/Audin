@@ -71,13 +71,13 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
+          gradle-version: 8.12
           validate-wrappers: false
 
       - name: Build Android APK
         run: |
           cd android
-          chmod +x gradlew
-          ./gradlew assembleDebug
+          gradle assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
